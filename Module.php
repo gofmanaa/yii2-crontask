@@ -9,27 +9,24 @@ namespace crontask;
 
 
 use Yii;
-use yii\base\Action;
-use yii\console\Exception;
+use yii\base\BootstrapInterface;
 
 
-class Module extends \yii\base\Module
+class Module extends \yii\base\Module implements BootstrapInterface
 {
 
     public $defaultRoute = 'cron';
-    public $controllerNamespace = 'crontask\controllers';
-
     public $nameComponent = 'crontab';
-
     public $fileName = 'cron.txt';
     public $fileDir = null;
     public $crontabPath = null;
+    public $tasks = [];
 
+    /**
+     * Initializes the module.
+     */
     public function init()
     {
-        parent::init();
-
-
         $this->setComponents([
             $this->nameComponent => [
                 'class' => 'gofmanaa\crontask\components\Crontab',
@@ -38,6 +35,22 @@ class Module extends \yii\base\Module
                 'crontabPath'=>$this->crontabPath,
             ],
         ]);
+
+        parent::init();
+    }
+
+    public function getUniqueId(){
+        return $this->id;
+    }
+
+    public function bootstrap($app){
+        if ($app instanceof \yii\console\Application) {
+            $app->controllerMap[$this->id] =
+                [
+                    'class' => 'crontask\console\CronController',
+                    'module' => $this,
+                ];
+        }
 
     }
 

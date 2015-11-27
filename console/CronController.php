@@ -5,8 +5,9 @@
  * Time: 10:56 AM
  */
 
-namespace crontask\controllers;
+namespace crontask\console;
 
+use crontask\Module;
 use gofmanaa\crontask\components\Crontab;
 use yii\console\Controller;
 use yii\helpers\ArrayHelper;
@@ -19,17 +20,21 @@ use yii\helpers\Console;
 class CronController extends Controller
 {
 
-
+    /**
+     * @var Module
+     */
+    public $module;
     /**
      * Displays available commands or the detailed information
      * about a particular command.
      */
+
+
     public function actionIndex()
     {
-        echo $this->ansiFormat('./yii ' . $this->module->id . '/' . $this->id . '/start' . PHP_EOL, Console::FG_YELLOW);
-        echo $this->ansiFormat('./yii ' . $this->module->id . '/' . $this->id . '/stop //stop all crontab -r' . PHP_EOL, Console::FG_YELLOW);
-        echo $this->ansiFormat('./yii ' . $this->module->id . '/' . $this->id . '/ls //list job crontab -l' . PHP_EOL, Console::FG_YELLOW);
+        $this->run('/help', [$this->module->id]);
     }
+
 
     /**
      *  Start cron tasks
@@ -42,8 +47,8 @@ class CronController extends Controller
         $cron = $this->module->get($this->module->nameComponent);
         $cron->eraseJobs();
 
-        if($tasks = \Yii::$app->params['tasks']) {
-            foreach ($tasks as $task) {
+        if(empty($this->module->tasks)) {
+            foreach ($this->module->tasks as $task) {
                 $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
                     [],
                     ArrayHelper::getValue($task, 'min'),
@@ -74,10 +79,22 @@ class CronController extends Controller
 
 
     /**
+     * @return string the controller ID that is prefixed with the module ID (if any).
+     */
+    public function getUniqueId()
+    {
+        return $this->id;
+    }
+
+
+    /**
      *  List All Cron Jobs
      */
     public function actionLs()
     {
+        /**
+         * @var $cron Crontab
+         */
         echo shell_exec('crontab -l') . PHP_EOL;
     }
 

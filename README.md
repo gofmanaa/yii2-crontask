@@ -22,51 +22,52 @@ or add
 to the require section of your `composer.json` file.
 
 
+Requirements
+-----
+
+Linux OS
+Yii2 
+
 Usage
 -----
 Add to console config:
    
 ```php
 return [
+    'bootstrap' => [
+        'crontask'
+    ],
     'modules' => [
         'crontask' => [
             'class' => 'gofmanaa\crontask\Module',
             'fileName'=>'cron.txt',
+            'tasks'=>[
+                'dosomething'=>
+                            [
+                                'command'=>'path/to/controller/action',
+                               'min'=>'*/1',
+                               'hour'=>'*',
+                               'day'=>'*',
+                               'month'=>'*',
+                               'dayofweek'=>'*',
+                            ],
+                'dosomething2'=>
+                            [
+                                'command'=>'path/to/controller/action',
+                                'min'=>'*/2',
+                            ],
+            ]
         ],
     ],
 ]
 ```
 
-
-```php
-  'params' =>[
-        'tasks'=>[
-            'dosomething'=>
-                   [
-                       'command'=>'path/to/controller/action',
-                       'min'=>'*/1',
-                       'hour'=>'*',
-                       'day'=>'*',
-                       'month'=>'*',
-                       'dayofweek'=>'*'
-    
-                   ],
-            'dosomething2'=>
-                [
-                    'command'=>'path/to/script',
-                    'min'=>'*/2',
-    
-                ],
-        ]
-  ]
-```
-
 Console command
 -----
 ```
-- crontask/cron                    Provides cron information about console commands.
-    crontask/cron/index (default)  Displays available commands or the detailed information
-    crontask/cron/ls               List All Cron Jobs
-    crontask/cron/start            Start cron tasks
-    crontask/cron/stop             Stop cron
+- crontask                    Provides cron information about console commands.
+    crontask/index (default)  Displays available commands or the detailed information
+    crontask/ls               List All Cron Jobs
+    crontask/start            Start cron tasks
+    crontask/stop             Stop cron
 ```

@@ -19,7 +19,7 @@ class Crontab extends \yii\base\Component{
 
 
     /**
-     * Initializes the object.
+     * Initializes the Component.
      * This method is invoked at the end of the constructor after the object is initialized with the
      * given configuration.
      */
@@ -27,7 +27,7 @@ class Crontab extends \yii\base\Component{
     {
         parent::init();
 
-        $result	=(!$this->directory) ? $this->setDirectory(\Yii::getAlias('@console').'/cronfile/') : $this->setDirectory($this->directory);
+        $result	=(!$this->directory) ? $this->setDirectory(\Yii::getAlias('@runtime').'/cronfile/') : $this->setDirectory($this->directory);
         if(!$result)
             exit('Directory error');
         $result	=(!$this->filename) ? $this->createCronFile("crons") : $this->createCronFile($this->filename);
