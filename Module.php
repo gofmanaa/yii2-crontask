@@ -29,7 +29,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         $this->setComponents([
             $this->nameComponent => [
-                'class' => 'gofmanaa\crontask\components\Crontab',
+                'class' => 'crontask\components\Crontab',
                 'filename' => $this->fileName,
                 'directory'=> $this->fileDir,
                 'crontabPath'=>$this->crontabPath,

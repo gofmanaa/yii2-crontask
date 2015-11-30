@@ -5,7 +5,7 @@
  * Time: 10:56 AM
  */
 
-namespace gofmanaa\crontask\components;
+namespace crontask\components;
 
 
 class Crontab extends \yii\base\Component{
