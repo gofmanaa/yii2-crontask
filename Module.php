@@ -5,7 +5,7 @@
  * Time: 5:17 PM
  */
 
-namespace crontask;
+namespace gofmanaa\crontask;
 
 
 use Yii;
@@ -27,9 +27,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
      */
     public function init()
     {
+
         $this->setComponents([
             $this->nameComponent => [
-                'class' => 'crontask\components\Crontab',
+                'class' => 'gofmanaa\crontask\components\Crontab',
                 'filename' => $this->fileName,
                 'directory'=> $this->fileDir,
                 'crontabPath'=>$this->crontabPath,
@@ -37,6 +38,8 @@ class Module extends \yii\base\Module implements BootstrapInterface
         ]);
 
         parent::init();
+
+
     }
 
     public function getUniqueId(){
@@ -47,7 +50,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
         if ($app instanceof \yii\console\Application) {
             $app->controllerMap[$this->id] =
                 [
-                    'class' => 'crontask\console\CronController',
+                    'class' => 'gofmanaa\crontask\console\CronController',
                     'module' => $this,
                 ];
         }

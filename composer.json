@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "crontask\\": ""
+            "gofmanaa\\crontask\\": ""
         }
     }
 }

@@ -5,7 +5,7 @@
  * Time: 10:56 AM
  */
 
-namespace crontask\console;
+namespace gofmanaa\crontask\console;
 
 use crontask\Module;
 use gofmanaa\crontask\components\Crontab;
@@ -47,7 +47,7 @@ class CronController extends Controller
         $cron = $this->module->get($this->module->nameComponent);
         $cron->eraseJobs();
 
-        if(empty($this->module->tasks)) {
+        if(!empty($this->module->tasks)) {
             foreach ($this->module->tasks as $task) {
                 $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
                     [],
