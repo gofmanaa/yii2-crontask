@@ -7,7 +7,8 @@
 
 namespace gofmanaa\crontask\console;
 
-use crontask\Module;
+use gofmanaa\crontask\components\Cronjob;
+use gofmanaa\crontask\Module;
 use gofmanaa\crontask\components\Crontab;
 use yii\console\Controller;
 use yii\helpers\ArrayHelper;
@@ -21,7 +22,7 @@ class CronController extends Controller
 {
 
     /**
-     * @var Module
+     * @var $module Module
      */
     public $module;
     /**
@@ -37,9 +38,11 @@ class CronController extends Controller
 
 
     /**
-     *  Start cron tasks
+     * Start cron tasks
+     * @param string $taskCommand
+     * @throws \yii\base\InvalidConfigException
      */
-    public function actionStart()
+    public function actionStart($taskCommand = null )
     {
         /**
          * @var $cron Crontab
@@ -48,16 +51,34 @@ class CronController extends Controller
         $cron->eraseJobs();
 
         if(!empty($this->module->tasks)) {
-            foreach ($this->module->tasks as $task) {
-                $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
-                    [],
-                    ArrayHelper::getValue($task, 'min'),
-                    ArrayHelper::getValue($task, 'hour'),
-                    ArrayHelper::getValue($task, 'day'),
-                    ArrayHelper::getValue($task, 'month'),
-                    ArrayHelper::getValue($task, 'dayofweek')
-                );
+            if($taskCommand && isset($this->module->tasks[$taskCommand])){
+
+                    $task = $this->module->tasks[$taskCommand];
+                    $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
+                        null,
+                        ArrayHelper::getValue($task, 'min'),
+                        ArrayHelper::getValue($task, 'hour'),
+                        ArrayHelper::getValue($task, 'day'),
+                        ArrayHelper::getValue($task, 'month'),
+                        ArrayHelper::getValue($task, 'dayofweek'),
+                        $this->module->cronGroup //mast be unique for any app on server
+                    );
+
+            } else {
+                    foreach ($this->module->tasks as $commandName => $task) {
+
+                        $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
+                            null,
+                            ArrayHelper::getValue($task, 'min'),
+                            ArrayHelper::getValue($task, 'hour'),
+                            ArrayHelper::getValue($task, 'day'),
+                            ArrayHelper::getValue($task, 'month'),
+                            ArrayHelper::getValue($task, 'dayofweek'),
+                            $this->module->cronGroup //mast be unique for any app on server
+                        );
+                    }
             }
+
             $cron->saveCronFile(); // save to my_crontab cronfile
             $cron->saveToCrontab(); // adds all my_crontab jobs to system (replacing previous my_crontab jobs)
 
@@ -71,10 +92,29 @@ class CronController extends Controller
     /**
      *  Stop cron
      */
-    public function actionStop()
+    /**
+     * @param integer $index
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function actionStop($index = null)
     {
-        system('crontab -r');
-        echo $this->ansiFormat('Cron Tasks Stopped.'. PHP_EOL, Console::FG_GREEN);
+        /**
+         * @var $cron Crontab
+         */
+        $cron = $this->module->get($this->module->nameComponent);
+        if(is_null($index)) {
+            $cron->eraseJobs();
+        } else {
+            $cron->removeJob($index);
+        }
+        $cron->saveCronFile(); // save to my_crontab cronfile
+        $cron->saveToCrontab(); // adds all my_crontab jobs to system (replacing previous my_crontab jobs)
+        if($cron->cronGroup){
+            echo $this->ansiFormat('Cron Tasks Stopped for group '.$cron->cronGroup .'.'. PHP_EOL, Console::FG_GREEN);
+        }else{
+            echo $this->ansiFormat('Cron Tasks Stopped.'. PHP_EOL, Console::FG_GREEN);
+        }
+
     }
 
 
@@ -88,14 +128,31 @@ class CronController extends Controller
 
 
     /**
-     *  List All Cron Jobs
+     *  List Application Cron Jobs; -a|-al All jobs
+     * @param string $params
+     * @throws \yii\base\InvalidConfigException
      */
-    public function actionLs()
-    {
+    public function actionLs($params = null){
         /**
          * @var $cron Crontab
          */
-        echo shell_exec('crontab -l') . PHP_EOL;
+        if(is_null($params)) {
+
+            $cron = $this->module->get($this->module->nameComponent);
+            $jobs = $cron->getJobs();
+
+            foreach ($jobs as $index=>$job) {
+                /**
+                 * @var $job Cronjob
+                 */
+                if($job->getGroup() == $this->module->cronGroup)
+                echo '['.$index.'] '. $this->ansiFormat($job->getJobCommand(), Console::FG_CYAN);
+            }
+        } elseif($params == '-a' || $params == '-al') {
+            echo shell_exec('crontab -l') . PHP_EOL;
+        }
+
     }
+
 
 }

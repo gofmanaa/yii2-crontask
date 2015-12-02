@@ -40,7 +40,7 @@ return [
     'modules' => [
         'crontask' => [
             'class' => 'gofmanaa\crontask\Module',
-            'fileName'=>'cron.txt',
+            'fileName'=>'cron.txt', //optional
             'tasks'=>[
                 'dosomething'=>
                             [
@@ -67,7 +67,7 @@ Console command
 ```
 - crontask                    Provides cron information about console commands.
     crontask/index (default)  Displays available commands or the detailed information
-    crontask/ls               List All Cron Jobs
-    crontask/start            Start cron tasks
-    crontask/stop             Stop cron
+    crontask/ls               List App Cron tasks;   crontask/ls -a All cron jobs
+    crontask/start            Start cron tasks,  "crontask/start dosomething2"  start single task
+    crontask/stop             Stop App cron. "crontask/stop 3"  stop task by index 3 
 ```

@@ -13,9 +13,9 @@ class Crontab extends \yii\base\Component{
     public $directory	= NULL;
     public $filename	= "crons";
     public $crontabPath	= NULL;
-
-    protected $jobs			= array();
-    protected $handle		= NULL;
+    public $cronGroup   = NULL;
+    protected $jobs		= [];
+    protected $handle	= NULL;
 
 
     /**
@@ -27,7 +27,7 @@ class Crontab extends \yii\base\Component{
     {
         parent::init();
 
-        $result	=(!$this->directory) ? $this->setDirectory(\Yii::getAlias('@runtime').'/cronfile/') : $this->setDirectory($this->directory);
+        $result	=(!$this->directory) ? $this->setDirectory(sys_get_temp_dir().DIRECTORY_SEPARATOR) : $this->setDirectory($this->directory);
         if(!$result)
             exit('Directory error');
         $result	=(!$this->filename) ? $this->createCronFile("crons") : $this->createCronFile($this->filename);
@@ -35,6 +35,7 @@ class Crontab extends \yii\base\Component{
             exit('File error');
 
         $this->loadJobs();
+
     }
 
 
@@ -64,10 +65,9 @@ class Crontab extends \yii\base\Component{
      *	@param	mixed	$dayofweek	Day(s) of week... 0 to 7 or short name. 0 and 7 = sunday
      *  @return Crontab return this
      */
-    function addJob($command, $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL)
+    function addJob($command, $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL, $groupName=NULL)
     {
-        $this->jobs[] = new Cronjob($command, $min, $hour, $day, $month, $dayofweek);
-
+        $this->jobs[] = new Cronjob($command, $min, $hour, $day, $month, $dayofweek, $groupName);
         return $this;
 
     }
@@ -76,9 +76,9 @@ class Crontab extends \yii\base\Component{
     /**
      *	Add an application job
      */
-    function addApplicationJob($entryScript, $commandName, $parameters = array(), $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL)
+    function addApplicationJob($entryScript, $commandName, $parameters = array(), $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL, $groupName=NULL)
     {
-        $this->jobs[] = new CronApplicationJob($entryScript, $commandName, $parameters, $min, $hour, $day, $month, $dayofweek);
+        $this->jobs[] = new CronApplicationJob($entryScript, $commandName, $parameters, $min, $hour, $day, $month, $dayofweek, $groupName);
 
         return $this;
     }
@@ -104,8 +104,12 @@ class Crontab extends \yii\base\Component{
      */
     function saveCronFile(){
         $this->emptyCrontabFile();
+
         foreach ($this->jobs as $job)
         {
+            /**
+             * @var $job Cronjob
+             */
 
             if(!fwrite($this->handle, $job->getJobCommand()))
                 return false;
@@ -158,7 +162,12 @@ class Crontab extends \yii\base\Component{
      */
     public function eraseJobs()
     {
-        $this->jobs = array();
+        foreach($this->jobs as $i => $job){
+            /** @var $job Cronjob */
+            if($job->getGroup() == $this->cronGroup){
+                $this->removeJob($i);
+            }
+        }
 
         return $this;
     }
@@ -244,20 +253,25 @@ class Crontab extends \yii\base\Component{
         {
             $line= fgets ($this->handle);
             $line = trim(trim($line), "\t");
+
             if(!empty($line))
             {
+
                 if(CronApplicationJob::isApplicationJob($line))
                 {
                     $obj = CronApplicationJob::parseFromCommand($line);
 
-                    if($obj !== FALSE)
+                    if($obj !== FALSE){
                         $this->jobs[] = $obj;
+                    }
                 }
                 else
                 {
+
                     $obj = Cronjob::parseFromCommand($line);
-                    if($obj !== FALSE)
+                    if($obj !== FALSE) {
                         $this->jobs[] = $obj;
+                    }
 
                 }
             }
@@ -306,15 +320,17 @@ class Crontab extends \yii\base\Component{
 
 class Cronjob
 {
+    const GROUP_PREFIX = 'GROUP=';
     protected $minute		= NULL;
     protected $hour			= NULL;
     protected $day			= NULL;
     protected $month		= NULL;
     protected $dayofweek	= NULL;
     protected $command		= NULL;
+    protected $groupName    = NULL;
 
 
-    function __construct($command, $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL)
+    function __construct($command, $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL,$groupName=NULL)
     {
         $this->setMinute($min);
         $this->setHour($hour);
@@ -322,6 +338,7 @@ class Cronjob
         $this->setMonth($month);
         $this->setDayofweek($dayofweek);
         $this->command = $command;
+        $this->setGroup($groupName);
 
         return $this;
     }
@@ -331,7 +348,7 @@ class Cronjob
      */
     public function getJobCommand()
     {
-        return $this->minute." ".$this->hour." ".$this->day." ".$this->month." ".$this->dayofweek." ".$this->getCommand()."\n";
+        return $this->minute." ".$this->hour." ".$this->day." ".$this->month." ".$this->dayofweek." ".$this->getCommand()." ".$this->getGroupName(). "\n";
     }
 
     /**
@@ -348,20 +365,29 @@ class Cronjob
      */
     static function parseFromCommand($command)
     {
-        $vars = preg_split("[ \t]",ltrim($command, " \t"), 6);
+        $groupName = NULL;
+        $vars = preg_split("/[ \t]/",ltrim($command, " \t"), 6);
 
         if(count($vars) < 5)
             return false;
 
-        $min 	 = $vars[0];
+        $min 	     = $vars[0];
         $hour 		 = $vars[1];
         $day		 = $vars[2];
         $month		 = $vars[3];
         $dayofweek 	 = $vars[4];
-
         $command 	 = $vars[5];
 
-        return new Cronjob($command, $min, $hour, $day, $month, $dayofweek);
+        if($groupStr   = strstr($command, '#'.self::GROUP_PREFIX) ){
+            $groupStr  = preg_split("/[ \t]/",$groupStr, 1);
+            $groupName = trim($groupStr[0]," \t".'#'.self::GROUP_PREFIX);
+
+            $command   = str_replace($groupStr[0],'',$vars[5]);
+            $command   = rtrim($command, " \t");
+        }
+
+
+        return new Cronjob($command, $min, $hour, $day, $month, $dayofweek, $groupName);
     }
 
     /* setter */
@@ -401,6 +427,11 @@ class Cronjob
         $this->dayofweek=($dayofweek) ? $dayofweek : "*";
     }
 
+    public function setGroup($groupName)
+    {
+        $this->groupName = $groupName;
+    }
+
     /* getter */
 
     public function getMinute()
@@ -428,6 +459,15 @@ class Cronjob
         return $this->dayofweek;
     }
 
+    public function getGroup()
+    {
+       return $this->groupName;
+    }
+
+    public function getGroupName()
+    {
+        return $groupName =  (($this->groupName) ? '#' . self::GROUP_PREFIX .$this->groupName : NULL);
+    }
 }
 
 
@@ -437,29 +477,19 @@ class CronApplicationJob extends Cronjob
     protected $commandName = NULL;
     protected $parameters  = array();
 
-    function __construct($entryScript, $commandName, $parameters = array(), $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL)
+
+    function __construct($entryScript, $commandName, $parameters = array(), $min=NULL, $hour=NULL, $day=NULL, $month=NULL, $dayofweek=NULL,$groupName=NULL)
     {
         $this->entryScript = $entryScript;
         $this->commandName = $commandName;
         $this->parameters = $parameters;
-
         $command = $this->getCommand();
-
-        parent::__construct($command, $min, $hour, $day, $month, $dayofweek);
+        parent::__construct($command, $min, $hour, $day, $month, $dayofweek,$groupName);
 
         return $this;
 
     }
 
-    /**
-     * Return the system command
-     */
-    public function getJobCommand()
-    {
-        $command =  $this->minute." ".$this->hour." ".$this->day." ".$this->month." ".$this->dayofweek." ".$this->getCommand()."\n";
-
-        return $command;
-    }
 
     /**
      * Return the Application command
@@ -477,48 +507,16 @@ class CronApplicationJob extends Cronjob
     }
 
     /**
-     * parse system job command and return an object
-     */
-    static function parseFromCommand($command)
-    {
-        $vars = preg_split("[ \t]",ltrim($command, " \t"), 6);
-
-        if(count($vars) < 5)
-            return false;
-
-        $min 	 = $vars[0];
-        $hour 		 = $vars[1];
-        $day		 = $vars[2];
-        $month		 = $vars[3];
-        $dayofweek 	 = $vars[4];
-
-        $command 	 = $vars[5];
-
-        if(preg_match('|^php ([^\\\]*.php) ([^\\\]*)|', $command, $matches) > 0)
-        {
-            $entryScript = basename($matches[1], ".php");
-            $params = explode(' ',$matches[2]);
-            $commandName = $params[0];
-            array_shift($params);
-            $parameters = $params;
-        }
-        else
-            return false;
-
-        return new CronApplicationJob($entryScript, $commandName, $parameters, $min, $hour, $day, $month, $dayofweek);
-    }
-
-    /**
      * Check if the given command would be an ApplicationJob
      */
     static function isApplicationJob($line)
     {
-        $vars = preg_split("[ \t]",ltrim(ltrim($line), "\t"), 6);
+        $vars = preg_split("/[ \t]/",ltrim($line), 6);
 
-        if(count($vars) < 5)
+        if(count($vars) < 5) {
             return false;
-
-        return (bool)preg_match("|^php ([^\\\]*.php) ([^\\\]*)|", $vars[5]);
+        }
+        return true;
     }
 
 
@@ -538,6 +536,7 @@ class CronApplicationJob extends Cronjob
     {
         $this->commandName = $commandName;
     }
+
 
 
     /* getter */
