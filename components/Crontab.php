@@ -11,7 +11,7 @@ namespace gofmanaa\crontask\components;
 class Crontab extends \yii\base\Component{
 
     public $directory	= NULL;
-    public $filename	= "crons";
+    public $filename	= ".crons";
     public $crontabPath	= NULL;
     public $cronGroup   = NULL;
     protected $jobs		= [];
@@ -26,8 +26,11 @@ class Crontab extends \yii\base\Component{
     public function init()
     {
         parent::init();
-
-        $result	=(!$this->directory) ? $this->setDirectory(sys_get_temp_dir().DIRECTORY_SEPARATOR) : $this->setDirectory($this->directory);
+        $home = $this->drush_server_home();
+        if(null == $home){
+            exit('Con\'t get user home directory');
+        }
+        $result	=(!$this->directory) ? $this->setDirectory($home.DIRECTORY_SEPARATOR) : $this->setDirectory($this->directory);
         if(!$result)
             exit('Directory error');
         $result	=(!$this->filename) ? $this->createCronFile("crons") : $this->createCronFile($this->filename);
@@ -38,6 +41,26 @@ class Crontab extends \yii\base\Component{
 
     }
 
+    /**
+     * Return the user's home directory.
+     */
+    function drush_server_home() {
+        // Cannot use $_SERVER superglobal since that's empty during UnitUnishTestCase
+        // getenv('HOME') isn't set on Windows and generates a Notice.
+        $home = getenv('HOME');
+        if (!empty($home)) {
+            // home should never end with a trailing slash.
+            $home = rtrim($home, '/');
+        }
+        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            // home on windows
+            $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+            // If HOMEPATH is a root directory the path can end with a slash. Make sure
+            // that doesn't happen.
+            $home = rtrim($home, '\\/');
+        }
+        return empty($home) ? NULL : $home;
+    }
 
     /**
      *	Add a job
