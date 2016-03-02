@@ -8,6 +8,9 @@
 namespace gofmanaa\crontask\components;
 
 
+use yii\helpers\ArrayHelper;
+use yii\helpers\VarDumper;
+
 class Crontab extends \yii\base\Component{
 
     public $directory	= NULL;
@@ -33,7 +36,7 @@ class Crontab extends \yii\base\Component{
         $result	=(!$this->directory) ? $this->setDirectory($home.DIRECTORY_SEPARATOR) : $this->setDirectory($this->directory);
         if(!$result)
             exit('Directory error');
-        $result	=(!$this->filename) ? $this->createCronFile("crons") : $this->createCronFile($this->filename);
+        $result	=(!$this->filename) ? $this->createCronFile(".crons") : $this->createCronFile($this->filename);
         if(!$result)
             exit('File error');
 
@@ -44,7 +47,7 @@ class Crontab extends \yii\base\Component{
     /**
      * Return the user's home directory.
      */
-    function drush_server_home() {
+    private  function drush_server_home() {
         // Cannot use $_SERVER superglobal since that's empty during UnitUnishTestCase
         // getenv('HOME') isn't set on Windows and generates a Notice.
         $home = getenv('HOME');
@@ -61,6 +64,8 @@ class Crontab extends \yii\base\Component{
         }
         return empty($home) ? NULL : $home;
     }
+
+
 
     /**
      *	Add a job
@@ -266,37 +271,55 @@ class Crontab extends \yii\base\Component{
     }
 
 
+
     /**
-     * Load jobs from crontab file
+     * Load active jobs from system crontab and merge with file jobs
      */
-    protected function loadJobs()
-    {
+    protected function loadJobs(){
+        $command = $this->crontabPath."crontab -l 2>&1";
+        $outputLines = [];
+        $fileLine    = [];
+        $systemJobs  = [];
+        exec($command, $outputLines);
+
+        foreach ($outputLines as $outputLine) {
+
+            if (stripos($outputLine, 'no crontab') !== 0) {
+                $outputLine = trim(trim($outputLine), "\t");
+                $systemJobs[] = $outputLine;
+            }
+        }
+
         fseek($this->handle, 0);
-        while (! feof ($this->handle))
-        {
-            $line= fgets ($this->handle);
+        while (! feof ($this->handle)) {
+            $line = fgets($this->handle);
             $line = trim(trim($line), "\t");
 
-            if(!empty($line))
+            if (!empty($line)) {
+                $fileLine[] = $line;
+            }
+        }
+        $mergedJobs = array_merge($systemJobs,$fileLine);
+        $mergedJobs = array_unique($mergedJobs);
+
+        foreach($mergedJobs as $job){
+
+            if(CronApplicationJob::isApplicationJob($job))
+            {
+                $obj = CronApplicationJob::parseFromCommand($job);
+
+                if($obj !== FALSE){
+                    $this->jobs[] = $obj;
+                }
+            }
+            else
             {
 
-                if(CronApplicationJob::isApplicationJob($line))
-                {
-                    $obj = CronApplicationJob::parseFromCommand($line);
-
-                    if($obj !== FALSE){
-                        $this->jobs[] = $obj;
-                    }
+                $obj = Cronjob::parseFromCommand($job);
+                if($obj !== FALSE) {
+                    $this->jobs[] = $obj;
                 }
-                else
-                {
 
-                    $obj = Cronjob::parseFromCommand($line);
-                    if($obj !== FALSE) {
-                        $this->jobs[] = $obj;
-                    }
-
-                }
             }
         }
 

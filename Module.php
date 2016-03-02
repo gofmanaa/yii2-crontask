@@ -18,7 +18,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
 
     public $defaultRoute = 'cron';
     public $nameComponent = 'crontab';
-    public $fileName = '.cron.txt';
+    public $fileName = '.crons';
     public $fileDir = null; //default /home/<username>
     public $crontabPath = null;
     public $tasks = [];
@@ -39,7 +39,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
                 'class'      => 'gofmanaa\crontask\components\Crontab',
                 'filename'   => $this->fileName,
                 'directory'  => $this->fileDir,
-                'crontabPath'=>$this->crontabPath,
+                'crontabPath'=> $this->crontabPath,
                 'cronGroup'  => $this->cronGroup
             ],
         ]);
