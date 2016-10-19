@@ -41,10 +41,12 @@ return [
         'crontask' => [
             'class' => 'gofmanaa\crontask\Module',
             'fileName'=>'cron.txt', //optional
+            'params'=>[ '2>&1' ], //common params
             'tasks'=>[
                 'dosomething'=>
                             [
-                                'command'=>'path/to/controller/action',
+                               'params'=>[ '--some=something' , '>/dev/null' ], //task params
+                               'command'=>'path/to/controller/action',
                                'min'=>'*/1',
                                'hour'=>'*',
                                'day'=>'*',
@@ -67,7 +69,8 @@ Console command
 ```
 - crontask                    Provides cron information about console commands.
     crontask/index (default)  Displays available commands or the detailed information
-    crontask/ls               List App Cron tasks;   crontask/ls -a All cron jobs
+    crontask/ls               List App Cron tasks;   crontask/ls a All cron jobs
     crontask/start            Start cron tasks,  "crontask/start dosomething2"  start single task
     crontask/stop             Stop App cron. "crontask/stop 3"  stop task by index 3 
+    crontask/restart          Restart cron tasks
 ```
