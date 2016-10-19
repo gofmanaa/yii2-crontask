@@ -355,7 +355,7 @@ class Crontab extends \yii\base\Component{
      * @param string $filename
      * @param string $accessType
      */
-    protected function openFile(& $handle,$filename, $accessType = 'a+')
+    protected function openFile(&$handle, $filename, $accessType = 'a+')
     {
         return $handle = fopen($this->directory.$filename, $accessType);
 

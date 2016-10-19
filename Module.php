@@ -22,6 +22,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public $fileDir = null; //default /home/<username>
     public $crontabPath = null;
     public $tasks = [];
+    public $params = [];
     public $cronGroup = null; //mast be unique for any app on server
 
     /**

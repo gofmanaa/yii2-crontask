@@ -49,13 +49,15 @@ class CronController extends Controller
          */
         $cron = $this->module->get($this->module->nameComponent);
         $cron->eraseJobs();
-
+        $common_params = $this->module->params;
         if(!empty($this->module->tasks)) {
             if($taskCommand && isset($this->module->tasks[$taskCommand])){
 
                     $task = $this->module->tasks[$taskCommand];
+                    $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
+
                     $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
-                        null,
+                        $params,
                         ArrayHelper::getValue($task, 'min'),
                         ArrayHelper::getValue($task, 'hour'),
                         ArrayHelper::getValue($task, 'day'),
@@ -67,8 +69,10 @@ class CronController extends Controller
             } else {
                     foreach ($this->module->tasks as $commandName => $task) {
 
+                        $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
+
                         $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
-                            null,
+                            $params,
                             ArrayHelper::getValue($task, 'min'),
                             ArrayHelper::getValue($task, 'hour'),
                             ArrayHelper::getValue($task, 'day'),
@@ -91,8 +95,6 @@ class CronController extends Controller
 
     /**
      *  Stop cron
-     */
-    /**
      * @param integer $index
      * @throws \yii\base\InvalidConfigException
      */
@@ -119,6 +121,16 @@ class CronController extends Controller
 
 
     /**
+     *  Restart cron
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function actionRestart()
+    {
+        $this->actionStop();
+        $this->actionStart();
+    }
+
+    /**
      * @return string the controller ID that is prefixed with the module ID (if any).
      */
     public function getUniqueId()
@@ -128,15 +140,16 @@ class CronController extends Controller
 
 
     /**
-     *  List Application Cron Jobs; -a|-al All jobs
+     *  List Application Cron Jobs; a|al All jobs
      * @param string $params
      * @throws \yii\base\InvalidConfigException
      */
-    public function actionLs($params = null){
+    public function actionLs($params = false){
         /**
          * @var $cron Crontab
          */
-        if(is_null($params)) {
+
+        if(false == $params) {
 
             $cron = $this->module->get($this->module->nameComponent);
             $jobs = $cron->getJobs();
@@ -148,11 +161,10 @@ class CronController extends Controller
                 if($job->getGroup() == $this->module->cronGroup)
                 echo '['.$index.'] '. $this->ansiFormat($job->getJobCommand(), Console::FG_CYAN);
             }
-        } elseif($params == '-a' || $params == '-al') {
+        } elseif($params == 'a' || $params == 'al') {
             echo shell_exec('crontab -l') . PHP_EOL;
         }
 
     }
-
 
 }
