@@ -17,6 +17,7 @@ class Crontab extends \yii\base\Component{
     public $filename	= ".crons";
     public $crontabPath	= NULL;
     public $cronGroup   = NULL;
+    public $phpPath     = '/usr/bin/php';
     protected $jobs		= [];
     protected $handle	= NULL;
 
@@ -542,7 +543,7 @@ class CronApplicationJob extends Cronjob
      */
     public function getCommand()
     {
-        $command = '/usr/bin/php '.$this->entryScript . ' ' . $this->commandName;
+        $command = $this->phpPath.' '.$this->entryScript . ' ' . $this->commandName;
 
         if(!empty($this->parameters)) {
             foreach ($this->parameters as $parameter)
