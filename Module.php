@@ -19,6 +19,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public $defaultRoute = 'cron';
     public $nameComponent = 'crontab';
     public $fileName = '.crons';
+    public $phpPath = '/usr/bin/php';
     public $fileDir = null; //default /home/<username>
     public $crontabPath = null;
     public $tasks = [];
