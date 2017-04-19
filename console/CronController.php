@@ -56,7 +56,7 @@ class CronController extends Controller
                     $task = $this->module->tasks[$taskCommand];
                     $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
 
-                    $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
+                    $cron->addApplicationJob($this->module->phpPath.' '.\Yii::getAlias('@app') . '/../yii', $task['command'],
                         $params,
                         ArrayHelper::getValue($task, 'min'),
                         ArrayHelper::getValue($task, 'hour'),
@@ -71,7 +71,7 @@ class CronController extends Controller
 
                         $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
 
-                        $cron->addApplicationJob(\Yii::getAlias('@app') . '/../yii', $task['command'],
+                        $cron->addApplicationJob($this->module->phpPath.' '.\Yii::getAlias('@app') . '/../yii', $task['command'],
                             $params,
                             ArrayHelper::getValue($task, 'min'),
                             ArrayHelper::getValue($task, 'hour'),
