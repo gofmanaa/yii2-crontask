@@ -42,6 +42,7 @@ return [
             'class' => 'gofmanaa\crontask\Module',
             'fileName'=>'cron.txt', //optional
             'params'=>[ '2>&1' ], //common params
+            'phpPath' => '/usr/bin/php', //default php path
             'tasks'=>[
                 'dosomething'=>
                             [
