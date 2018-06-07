@@ -37,6 +37,11 @@ class CronController extends Controller
     }
 
 
+    protected function getYiiPath(){
+        $path = \Yii::getAlias('@app') . '/../yii';
+        return $this->module->yiiPath ?: $path;
+    }
+
     /**
      * Start cron tasks
      * @param string $taskCommand
@@ -56,7 +61,7 @@ class CronController extends Controller
                     $task = $this->module->tasks[$taskCommand];
                     $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
 
-                    $cron->addApplicationJob($this->module->phpPath.' '.\Yii::getAlias('@app') . '/../yii', $task['command'],
+                    $cron->addApplicationJob($this->module->phpPath.' '.$this->getYiiPath(), $task['command'],
                         $params,
                         ArrayHelper::getValue($task, 'min'),
                         ArrayHelper::getValue($task, 'hour'),
@@ -71,7 +76,7 @@ class CronController extends Controller
 
                         $params = ArrayHelper::merge( ArrayHelper::getValue($task, 'params',[]), $common_params );
 
-                        $cron->addApplicationJob($this->module->phpPath.' '.\Yii::getAlias('@app') . '/../yii', $task['command'],
+                        $cron->addApplicationJob($this->module->phpPath.' '.$this->getYiiPath(), $task['command'],
                             $params,
                             ArrayHelper::getValue($task, 'min'),
                             ArrayHelper::getValue($task, 'hour'),
